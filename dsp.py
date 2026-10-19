@@ -36,6 +36,33 @@ class AudioDSP:
         self.cal_factor = float(cal_factor)
         self._a_b, self._a_a = self._design_weighting_filter("A")
         self._c_b, self._c_a = self._design_weighting_filter("C")
+        self.reset_stream_filters()
+
+    def reset_stream_filters(self) -> None:
+        """Clear A/C weighting history before a new input stream begins."""
+        self._stream_states = {
+            "A": np.zeros(max(len(self._a_a), len(self._a_b)) - 1),
+            "C": np.zeros(max(len(self._c_a), len(self._c_b)) - 1),
+        }
+
+    def process_weighted_signal(self, samples: np.ndarray, weighting: str) -> np.ndarray:
+        """Filter one consecutive stream block while retaining IIR state."""
+        data = self._as_signal(samples)
+        mode = weighting.upper()
+        if mode == "Z":
+            return data
+        if mode == "A":
+            b_coeff, a_coeff = self._a_b, self._a_a
+        elif mode == "C":
+            b_coeff, a_coeff = self._c_b, self._c_a
+        else:
+            raise ValueError("weighting must be 'A', 'C', or 'Z'")
+
+        filtered, state = scipy_signal.lfilter(
+            b_coeff, a_coeff, data, zi=self._stream_states[mode]
+        )
+        self._stream_states[mode] = state
+        return filtered
 
     def _design_weighting_filter(self, weighting: str) -> tuple[np.ndarray, np.ndarray]:
         """Bilinear-transform an IEC-style analog weighting prototype."""

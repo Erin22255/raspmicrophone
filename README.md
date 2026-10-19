@@ -11,10 +11,20 @@ raspmicrophone/
 ├── config.json      # 取樣率與聲壓計算設定
 ├── dashboard.py     # 800 x 480 PyQt5 使用者介面
 ├── dsp.py           # 加權濾波、SPL、FFT、1/3 倍頻程
+├── interface_preview/ # 無麥克風、無測量數值的版面預覽工具
 ├── readmecode.md    # 各程式檔案的職責與執行時機
+├── recording.py     # WAV 錄音、存檔與讀取
 ├── requirements.txt # Python 套件清單
 └── run.py           # 唯一建議使用的程式入口
 ```
+
+只想檢查介面排版、不使用麥克風或顯示測量數值時，可執行：
+
+```powershell
+python .\interface_preview\preview.py
+```
+
+預覽視窗會顯示 `INTERFACE PREVIEW | NO AUDIO INPUT`，SPL/Leq/Max 和圖表維持空白。正式量測請執行 `python run.py`。
 
 ## 筆電安裝與測試
 
@@ -170,6 +180,17 @@ python run.py
 ```
 
 `--list-devices` 會顯示裝置索引與名稱，將 `input_device` 設為其中一個索引（整數）或名稱片段（字串）。
+
+## 使用介面功能
+
+主視窗以四個頁籤分開功能，保留原本測量頁的波形和 FFT/1/3 OCT 圖表：
+
+- **測量**：顯示即時 SPL、Leq、Max、波形及頻譜。預設 A 加權（dBA）；C、Z 可用於比較。FAST、SLOW、IMPULSE 是獨立的聲級時間響應選擇，分別使用 125 ms、1 s，以及 35 ms 上升 / 1.5 s 下降時間常數。它們不是音訊圖表更新速率。
+- **錄音**：錄音、暫停/繼續、停止、存成 16-bit PCM WAV，並可選取已儲存的 WAV 播放。錄音存於專案的 `recordings/` 資料夾；關閉程式會停止錄音，不會自動存檔。
+- **頻譜分析**：顯示主峰頻率與 dB/Hz，並限制峰值搜尋頻帶。FAN（60–500 Hz）、MUSIC（80–12000 Hz）、ALL（20 Hz–Nyquist）只是方便操作的頻帶預設，可自行改上下限，不是 IEC 定義的固定分類。
+- **校正**：輸入已知參考聲級，以穩定 1 kHz 音調收集 3 秒資料，檢查主頻與聲級穩定度後計算 `cal_factor`，並寫回 `config.json`。可按「重置校正」恢復未校正係數。
+
+校正不能只靠「手機播放 1 kHz」完成：手機提供頻率，不保證麥克風位置的聲壓。建議使用聲校正器（例如 1 kHz、94 dB SPL），或把已校正聲級計放在麥克風位置作參考。若沒有已知聲壓來源，請保留「未校正」狀態；輸入一個猜測的參考值不會讓量測變準。
 
 ## 聲壓校正與測量限制
 
