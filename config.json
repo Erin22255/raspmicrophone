@@ -1,0 +1,7 @@
+{
+  "sample_rate": 48000,
+  "chunk_size": 4800,
+  "p_ref": 0.00002,
+  "cal_factor": 1.0,
+  "weighting": "A"
+}
